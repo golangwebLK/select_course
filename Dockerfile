@@ -16,7 +16,7 @@ registry = \"sparse+https://rsproxy.cn/index/\"\n\
 index = \"https://rsproxy.cn/crates.io-index\"\n\
 [net]\n\
 git-fetch-with-cli = true\n" >> $CARGO_HOME/config
-RUN cargo install --root /usr/local/lib/diesel diesel_cli --no-default-features --features mysql
+RUN cargo install diesel_cli --no-default-features --features mysql
 RUN cargo build --release
 
 
@@ -31,7 +31,7 @@ WORKDIR /apps
 EXPOSE 8080
 ARG ARCH=x86_64
 
-COPY --from=build /usr/local/lib/diesel/*.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/*.so* /usr/lib/${ARCH}-linux-gnu/
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/select_course
