@@ -31,7 +31,11 @@ WORKDIR /apps
 EXPOSE 8080
 ARG ARCH=x86_64
 
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/*.so* /usr/lib/${ARCH}-linux-gnu/
+#COPY --from=build /usr/lib/${ARCH}-linux-gnu/*.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libmysqlclient.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libcrypto.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libssl.so* /usr/lib/${ARCH}-linux-gnu/
+
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/select_course
