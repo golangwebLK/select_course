@@ -1,10 +1,10 @@
 # 使用一个基础镜像
-FROM rust:1.70 as build
+FROM rust:1.71 as build
 
 # 创建一个新的工作目录
 WORKDIR /app
 
-COPY . /app/
+COPY . .
 
 RUN  echo "[source.crates-io]\n\
 replace-with = 'rsproxy-sparse'\n\
@@ -17,17 +17,22 @@ index = \"https://rsproxy.cn/crates.io-index\"\n\
 [net]\n\
 git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
+
 RUN cargo build --release
 
-FROM alpine
 
-ENV TZ=Asia/Shanghai
+FROM rust:1.71
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.tencentcdb.com:27846/student_manager_data
 
-WORKDIR /app
+ENV SERVER_IP=0.0.0.0:8080
 
-EXPOSE 8959
+WORKDIR /apps
+
+EXPOSE 8080
+
+RUN cargo install diesel_cli
+RUN cargo install diesel_cli --no-default-features --features mysql
 
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 

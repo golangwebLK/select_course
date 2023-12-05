@@ -12,7 +12,7 @@ pub struct Server{
     pub ip:String,
 }
 pub fn parsing_conf_toml() -> Config{
-    let file_path = "Config.toml";
+    let file_path = "config.toml";
     let mut file = match File::open(file_path){
         Ok(f)=>f,
         Err(e)=>panic!("no such file {} exception:{}", file_path, e)
