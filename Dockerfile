@@ -20,6 +20,7 @@ RUN cargo install diesel_cli --no-default-features --features mysql
 RUN cargo build --release
 
 
+
 FROM debian:11
 
 ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.tencentcdb.com:27846/student_manager_data
@@ -31,10 +32,7 @@ WORKDIR /apps
 EXPOSE 8080
 ARG ARCH=x86_64
 
-#COPY --from=build /usr/lib/${ARCH}-linux-gnu/*.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libmysqlclient.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libcrypto.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libssl.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
 
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 
