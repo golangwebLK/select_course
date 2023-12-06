@@ -1,9 +1,10 @@
 # 使用一个基础镜像
-FROM rust:1.71 as build
+FROM alpine:3.18 as build
 
-RUN apt-get update && apt-get install -y musl-tools
 # 创建一个新的工作目录
 WORKDIR /app
+
+RUN apk add rust=1.71.1-r0 cargo=1.71.1-r0
 
 COPY . .
 
@@ -19,14 +20,11 @@ index = \"https://rsproxy.cn/crates.io-index\"\n\
 git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
 
-RUN rustup target add x86_64-unknown-linux-musl
-
 RUN cargo install diesel_cli --no-default-features --features mysql
 
-ENV CC=musl-gcc
-ENV RUSTFLAGS="-C target-feature=+crt-static"
+ENV RUSTFLAGS='-C target-feature=+crt-static'
 
-RUN cargo build --target x86_64-unknown-linux-musl --release
+RUN cargo build --release
 
 
 
@@ -44,7 +42,7 @@ EXPOSE 8080
 #
 #COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
 
-COPY --from=build /app/target/x86_64-unknown-linux-musl/release/select_course /usr/local/bin/
+COPY --from=build /app/target/release/select_course /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/select_course
 
