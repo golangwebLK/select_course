@@ -1,10 +1,8 @@
 # 使用一个基础镜像
-FROM alpine:3.18 as build
+FROM rust:1.71 as build
 
 # 创建一个新的工作目录
 WORKDIR /app
-
-RUN apk add rust=1.71.1-r0 cargo=1.71.1-r0
 
 COPY . .
 
@@ -22,14 +20,9 @@ git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
 RUN cargo install diesel_cli --no-default-features --features mysql
 
-ENV RUSTFLAGS='-C target-feature=+crt-static'
-
 RUN cargo build --release
 
-
-
-
-FROM scratch
+FROM debian:11
 
 ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.tencentcdb.com:27846/student_manager_data
 
@@ -38,9 +31,10 @@ ENV SERVER_IP=0.0.0.0:8080
 WORKDIR /apps
 
 EXPOSE 8080
-#ARG ARCH=x86_64
-#
-#COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
+
+ARG ARCH=x86_64
+
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
 
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 
