@@ -20,9 +20,11 @@ git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
 RUN cargo install diesel_cli --no-default-features --features mysql
 
+ENV RUSTFLAGS='-C target-feature=+crt-static'
+
 RUN cargo build --release
 
-FROM debian:11
+FROM scratch
 
 ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.tencentcdb.com:27846/student_manager_data
 
@@ -32,9 +34,9 @@ WORKDIR /apps
 
 EXPOSE 8080
 
-ARG ARCH=x86_64
-
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
+#ARG ARCH=x86_64
+#
+#COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
 
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 
