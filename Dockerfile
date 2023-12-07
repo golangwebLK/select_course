@@ -1,5 +1,5 @@
 # 使用一个基础镜像
-FROM rust:1.71 as build
+FROM rust:1.74 as build
 
 # 创建一个新的工作目录
 WORKDIR /app
@@ -20,11 +20,13 @@ git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
 RUN cargo install diesel_cli --no-default-features --features mysql
 
-ENV RUSTFLAGS='-C target-feature=+crt-static'
+RUN apt-get update && apt-get install -y musl-tools
 
-RUN cargo build --release
+RUN rustc target add x86_64-unknown-linux-musl
 
-FROM scratch
+RUN RUSTFLAGS="-C target-feature=+crt-static" cargo build --target x86_64-unknown-linux-musl --release
+
+FROM debian:11
 
 ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.tencentcdb.com:27846/student_manager_data
 
@@ -34,7 +36,7 @@ WORKDIR /apps
 
 EXPOSE 8080
 
-#ARG ARCH=x86_64
+#ARG ARCH=aarch64
 #
 #COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
 
