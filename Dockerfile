@@ -20,9 +20,11 @@ git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
 RUN cargo install diesel_cli --no-default-features --features mysql
 
-RUN apt-get update && apt-get install -y musl-tools
+RUN sudo apt-get update
 
-RUN rustc target add x86_64-unknown-linux-musl
+RUN sudo apt-get install --fix-missing musl-tools
+
+RUN rustup target add x86_64-unknown-linux-musl
 
 RUN RUSTFLAGS="-C target-feature=+crt-static" cargo build --target x86_64-unknown-linux-musl --release
 
@@ -40,7 +42,7 @@ EXPOSE 8080
 #
 #COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
 
-COPY --from=build /app/target/release/select_course /usr/local/bin/
+COPY --from=build /app/target/x86_64-unknown-linux-musl/release/select_course /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/select_course
 
