@@ -5,6 +5,7 @@ use actix_web::{
     Error,
 };
 use futures_util::future::LocalBoxFuture;
+use crate::util::auth::Identity;
 
 pub struct Auth;
 
@@ -43,11 +44,12 @@ impl<S, B> Service<ServiceRequest> for AuthMiddleware<S>
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        println!("Hi from start. You requested: {}", req.path());
-
-
-        //响应处理
+        let token = req.headers().get("Authorization").unwrap();
+        let token_str = token.to_str().unwrap();
+        let v: Vec<&str> = token_str.split(' ').collect();
+        let _identity = Identity::from_auth_token(v[1]);
         let fut = self.service.call(req);
+        //响应处理
         Box::pin(async move {
             let res = fut.await?;
             Ok(res)

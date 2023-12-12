@@ -18,7 +18,7 @@ pub fn sha1(b: &[u8]) -> String {
 }
 
 #[allow(dead_code)]
-pub fn sha256(b: &[u8]) -> String {
+pub fn sha256(b: String) -> String {
     let mut h = Sha256::new();
     h.update(b);
     const_hex::encode(h.finalize())

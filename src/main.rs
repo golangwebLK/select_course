@@ -1,7 +1,8 @@
 
-extern crate diesel;
 mod user;
 mod schema;
+mod course;
+mod user_course;
 
 use actix_web::{App, HttpResponse, HttpServer, middleware, web};
 use diesel::r2d2::{ConnectionManager};
@@ -30,7 +31,9 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::DefaultHeaders::new().add(("Version", "0.0.1")))
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default().log_target("request::log"))
-            .wrap(auth::Auth)
+            .service(web::resource("/api/v1/login")
+                .route(web::post().to(user::handle::user::login))
+            )
             .app_data(web::Data::new(pool.clone()))
             .service(
                 web::scope("/api/v1").configure(router_config)
@@ -47,5 +50,7 @@ async fn main() -> std::io::Result<()> {
 
 
 fn router_config(cfg: &mut web::ServiceConfig) {
-    cfg .service(web::scope("/user").configure(user::router_config_user));
+    cfg .service(web::scope("/user")
+        .wrap(auth::Auth)
+        .configure(user::router_config_user));
 }

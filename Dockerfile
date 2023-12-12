@@ -17,20 +17,13 @@ index = \"https://rsproxy.cn/crates.io-index\"\n\
 [net]\n\
 git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
+RUN #cargo install diesel_cli --no-default-features --features mysql
 
-RUN cargo install diesel_cli --no-default-features --features mysql
-
-RUN sudo apt-get update
-
-RUN sudo apt-get install --fix-missing musl-tools
-
-RUN rustup target add x86_64-unknown-linux-musl
-
-RUN RUSTFLAGS="-C target-feature=+crt-static" cargo build --target x86_64-unknown-linux-musl --release
+RUN cargo build --release
 
 FROM debian:11
 
-ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.tencentcdb.com:27846/student_manager_data
+ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.tencentcdb.com:27846/select_course
 
 ENV SERVER_IP=0.0.0.0:8080
 
@@ -39,10 +32,11 @@ WORKDIR /apps
 EXPOSE 8080
 
 #ARG ARCH=aarch64
-#
-#COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
+ARG ARCH=x86_64
 
-COPY --from=build /app/target/x86_64-unknown-linux-musl/release/select_course /usr/local/bin/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
+
+COPY --from=build /app/target/release/select_course /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/select_course
 

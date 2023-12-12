@@ -1,10 +1,9 @@
-use std::env;
 
 use anyhow::Result;
 use base64::{prelude::BASE64_STANDARD, Engine};
 use serde::{Deserialize, Serialize};
+use crate::crypto::aes::CBC;
 
-use crate::{crypto::aes::CBC};
 
 #[allow(dead_code)]
 pub enum Role {
@@ -18,6 +17,7 @@ pub struct Identity {
     r: i8,
     t: String,
 }
+
 
 impl Identity {
     pub fn new(id: u64, role: i8, token: String) -> Self {
@@ -36,7 +36,7 @@ impl Identity {
         }
     }
 
-    pub fn from_auth_token(token: String) -> Self {
+    pub fn from_auth_token(token: &str) -> Self {
         let cipher = match BASE64_STANDARD.decode(token) {
             Err(err) => {
                 tracing::error!(error = ?err, "err invalid auth_token");
@@ -45,13 +45,7 @@ impl Identity {
             Ok(v) => v,
         };
 
-        let secret = match env::var("API_SECRET") {
-            Err(err) => {
-                tracing::error!(error = ?err, "err missing env(API_SECRET)");
-                return Identity::empty();
-            }
-            Ok(v) => v,
-        };
+        let secret = "0123456789abcdef";
         let key = secret.as_bytes();
 
         let plain = match CBC(key, &key[..16]).decrypt(&cipher) {
@@ -72,7 +66,8 @@ impl Identity {
     }
 
     pub fn to_auth_token(&self) -> Result<String> {
-        let secret = env::var("API_SECRET")?;
+        // let secret = env::var("API_SECRET")?;
+        let secret = "0123456789abcdef";
         let key = secret.as_bytes();
 
         let plain = serde_json::to_vec(self)?;
@@ -80,6 +75,8 @@ impl Identity {
 
         Ok(BASE64_STANDARD.encode(cipher))
     }
+
+
 
     pub fn id(&self) -> u64 {
         self.i
