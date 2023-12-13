@@ -57,6 +57,8 @@ pub async fn create_user(
         let num = model.data.student_data.len();
         student_data.extend(model.data.student_data.drain(..));
         if num >= 5000{
+            let v = map.get("page").unwrap();
+            map.insert("page",v+1);
             continue;
         }
         break;
@@ -123,7 +125,7 @@ pub async fn login(
     login_request: web::Json<LoginRequest>,
     pool: web::Data<ConnPool>
 ) -> impl Responder{
-    println!("{:?}", login_request);
+    // println!("{:?}", login_request);
     let login = login_request.into_inner();
     let mut conn = pool.get().unwrap();
     return match users
