@@ -1,7 +1,7 @@
 
 mod user;
 mod schema;
-mod course;
+mod class;
 mod user_course;
 
 use actix_web::{App, HttpResponse, HttpServer, middleware, web};

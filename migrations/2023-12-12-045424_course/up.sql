@@ -8,19 +8,19 @@ CREATE TABLE users (
 );
 
 
-CREATE TABLE courses (
+CREATE TABLE classes (
     id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    course_name VARCHAR(255) NOT NULL,
+    class_name VARCHAR(255) NOT NULL,
     start_time DATETIME,
     end_time DATETIME,
     note TEXT
 );
 
 
-CREATE TABLE users_courses (
+CREATE TABLE users_classes (
     id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
     user_id INT,
-    course_id INT,
+    class_id INT,
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (course_id) REFERENCES courses(id)
+    FOREIGN KEY (class_id) REFERENCES classes(id)
 );

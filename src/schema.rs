@@ -1,10 +1,10 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    courses (id) {
-        id -> Integer,
+    classes (id) {
+        id -> Nullable<Integer>,
         #[max_length = 255]
-        course_name -> Varchar,
+        class_name -> Varchar,
         start_time -> Nullable<Datetime>,
         end_time -> Nullable<Datetime>,
         note -> Nullable<Text>,
@@ -25,18 +25,18 @@ diesel::table! {
 }
 
 diesel::table! {
-    users_courses (id) {
-        id -> Integer,
+    users_classes (id) {
+        id -> Nullable<Integer>,
         user_id -> Nullable<Integer>,
-        course_id -> Nullable<Integer>,
+        class_id -> Nullable<Integer>,
     }
 }
 
-diesel::joinable!(users_courses -> courses (course_id));
-diesel::joinable!(users_courses -> users (user_id));
+diesel::joinable!(users_classes -> classes (class_id));
+diesel::joinable!(users_classes -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    courses,
+    classes,
     users,
-    users_courses,
+    users_classes,
 );
