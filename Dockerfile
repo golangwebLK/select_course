@@ -17,7 +17,7 @@ index = \"https://rsproxy.cn/crates.io-index\"\n\
 [net]\n\
 git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
-RUN #cargo install diesel_cli --no-default-features --features mysql
+RUN cargo install diesel_cli --no-default-features --features mysql
 
 RUN cargo build --release
 
@@ -27,6 +27,10 @@ ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.ten
 
 ENV SERVER_IP=0.0.0.0:8080
 
+ENV MANAGER_BASEURL=http://student_manager_data:8000/
+ENV COOKIE_NAME=_session_
+ENV COOKIE_VALUE=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzI5ODQzNDU3fQ.N_t_j8BUCaG3plBQonPXzFAN_t5R4-iwDOsRxCHMr7Lsm17Gd5bsrEyE5kOKSLcPdyYYK7HCU2jql4QC4iPc0zoN4BNAl4hWDhk51xfYB-n77FVlpIfR4IANaPqYYnj0qajw0okEoE57YclMNGIF2VUVFd372eIJrEVYWPuue6SBDRKklxobgaO1hqKe6fr3yalNteeOZvuJq9Rmg2QEgIbRvjyrbs9CZcLtTGXZQgRfXdVrEHSmGO4Ct_OBt97OnMQj6qfFLlHFwhl4fmIdqrVWrmcVE8f1xjbo2fdpWxNc1YtNC-0ciZvcGhiqxnnEJhd1NqVKMpmi6vUrxCgh9w
+
 WORKDIR /apps
 
 EXPOSE 8080
@@ -35,6 +39,7 @@ EXPOSE 8080
 ARG ARCH=x86_64
 
 COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libssl.so* /usr/lib/${ARCH}-linux-gnu/
 
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 

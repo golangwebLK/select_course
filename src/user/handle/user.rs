@@ -47,7 +47,7 @@ pub async fn create_user(
     loop{
         let res = client
             .get(env::var("MANAGER_BASEURL")
-                .unwrap()+"/api/studentData/")
+                .unwrap()+"/studentData/")
             .query(&map)
             .send()
             .await
