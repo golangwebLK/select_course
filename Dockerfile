@@ -40,6 +40,7 @@ ARG ARCH=x86_64
 
 COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm*.so* /usr/lib/${ARCH}-linux-gnu/
 COPY --from=build /usr/lib/${ARCH}-linux-gnu/libssl.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libcrypto.so* /usr/lib/${ARCH}-linux-gnu/
 
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 
