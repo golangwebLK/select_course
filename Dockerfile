@@ -36,9 +36,9 @@ WORKDIR /apps
 EXPOSE 8080
 
 #ARG ARCH=aarch64
-ARG ARCH=x86_64
-
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/lib*.so* /usr/lib/${ARCH}-linux-gnu/
+#ARG ARCH=x86_64
+#
+#COPY --from=build /usr/lib/${ARCH}-linux-gnu/lib*.so* /usr/lib/${ARCH}-linux-gnu/
 
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 
