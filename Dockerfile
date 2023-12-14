@@ -17,6 +17,11 @@ index = \"https://rsproxy.cn/crates.io-index\"\n\
 [net]\n\
 git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
+RUN apt-get update     \
+    && apt-get install -y libmariadb3     \
+    && rm -rf /var/lib/apt/lists/*
+
+
 RUN cargo build --release
 
 FROM debian:11
@@ -33,17 +38,19 @@ WORKDIR /apps
 
 EXPOSE 8080
 
-#ARG ARCH=aarch64
 ARG ARCH=x86_64
 
-RUN apt-get update&&apt-get install -y  \
-    libmysqlclient-dev \
-    libssl-dev
+# libpq related (required by diesel)
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libmariadb.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libssl.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libcrypto.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libgcc_s.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libc.so* /usr/lib/${ARCH}-linux-gnu/
+COPY --from=build /usr/lib/${ARCH}-linux-gnu/libz.so* /usr/lib/${ARCH}-linux-gnu/
 
 COPY --from=build /app/target/release/select_course /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/select_course
 
 CMD ["/usr/local/bin/select_course"]
-
-

@@ -1,4 +1,4 @@
-extern crate openssl;
+
 extern crate diesel;
 mod user;
 mod schema;
@@ -15,7 +15,6 @@ pub type ConnPool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    openssl_probe::init_ssl_cert_env_vars();
     dotenv().ok();
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
