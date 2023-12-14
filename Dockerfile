@@ -33,6 +33,10 @@ WORKDIR /apps
 
 EXPOSE 8080
 
-RUN chmod +x /app/target/release/select_course
+RUN cp /app/target/release/select_course /usr/local/bin/select_course
 
-CMD ["/app/target/release/select_course"]
+RUN rm -rf target
+
+RUN chmod +x /usr/local/bin/select_course
+
+CMD ["/usr/local/bin/select_course"]
