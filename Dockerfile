@@ -17,14 +17,9 @@ index = \"https://rsproxy.cn/crates.io-index\"\n\
 [net]\n\
 git-fetch-with-cli = true\n" >> $CARGO_HOME/config
 
-RUN apt-get update     \
-    && apt-get install -y libmariadb3     \
-    && rm -rf /var/lib/apt/lists/*
-
+RUN cargo install diesel_cli --no-default-features --features mysql
 
 RUN cargo build --release
-
-FROM debian:11
 
 ENV DATABASE_URL=mysql://root:wonderful123.@bj-cynosdbmysql-grp-34c8azma.sql.tencentcdb.com:27846/select_course
 
@@ -38,19 +33,6 @@ WORKDIR /apps
 
 EXPOSE 8080
 
-ARG ARCH=x86_64
+RUN chmod +x /app/target/release/select_course
 
-# libpq related (required by diesel)
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libmariadb.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libm.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libssl.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libcrypto.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libgcc_s.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libc.so* /usr/lib/${ARCH}-linux-gnu/
-COPY --from=build /usr/lib/${ARCH}-linux-gnu/libz.so* /usr/lib/${ARCH}-linux-gnu/
-
-COPY --from=build /app/target/release/select_course /usr/local/bin/
-
-RUN chmod +x /usr/local/bin/select_course
-
-CMD ["/usr/local/bin/select_course"]
+CMD ["/app/target/release/select_course"]
