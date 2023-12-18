@@ -37,10 +37,11 @@ async fn main() -> std::io::Result<()> {
             )
             .app_data(web::Data::new(pool.clone()))
             .service(
-                web::scope("/api/v1").configure(router_config)
+                web::scope("/api/v1")
+                    .wrap(auth::Auth)
+                    .configure(router_config)
             )
             .default_service(web::route().to(HttpResponse::NotFound))
-
     })
         .bind(server_ip)?
         // .workers(1)
@@ -52,6 +53,7 @@ async fn main() -> std::io::Result<()> {
 
 fn router_config(cfg: &mut web::ServiceConfig) {
     cfg .service(web::scope("/user")
-        .wrap(auth::Auth)
-        .configure(user::router_config_user));
+            .configure(user::router_config_user))
+        .service(web::scope("/class")
+            .configure(class::router_config_class));
 }
