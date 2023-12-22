@@ -1,23 +1,21 @@
 use std::collections::HashMap;
 use std::env;
+use std::option::Option;
 use actix_web::{HttpResponse, Responder, web};
-use chrono::{DateTime};
-
 use diesel::RunQueryDsl;
 use reqwest::header;
 use common::util::response::ApiResponse;
 use crate::ConnPool;
-use crate::class::data_model::Root;
-use crate::class::model::Class;
-use crate::schema::classes::dsl::classes;
+use crate::schema::specialities::dsl::specialities;
+use crate::speciality::data_model::Root;
+use crate::speciality::model::Speciality;
 
-pub async fn create_class(
+pub async fn create_speciality(
     pool: web::Data<ConnPool>
 ) -> impl Responder{
     let mut map = HashMap::new();
     map.insert("page",1);
-    map.insert("pageSize",50);
-    map.insert("specialityID",0);
+    map.insert("pageSize",10);
     let cookie_string =
         format!(
             "{}={}",
@@ -32,20 +30,20 @@ pub async fn create_class(
         .default_headers(request_headers)
         .build()
         .unwrap();
-    let mut class_data = Vec::new();
+    let mut specialities_data = Vec::new();
     loop{
         let res = client
             .get(env::var("MANAGER_BASEURL")
-                .unwrap()+"/class/")
+                .unwrap()+"/speciality/")
             .query(&map)
             .send()
             .await
             .unwrap();
         let res_string = res.text().await.unwrap();
         let mut model: Root = serde_json::from_str(&res_string).unwrap();
-        let num = model.data.classes.len();
-        class_data.extend(model.data.classes.drain(..));
-        if num >= 50{
+        let num = model.data.specialities.len();
+        specialities_data.extend(model.data.specialities.drain(..));
+        if num >= 10{
             let v = map.get("page").unwrap();
             map.insert("page",v+1);
             continue;
@@ -53,35 +51,29 @@ pub async fn create_class(
         break;
     }
     let mut conn = pool.get().unwrap();
-    diesel::delete(classes)
+    diesel::delete(specialities)
         .execute(&mut conn)
         .expect("Error deleting rows from classes table");
 
-    let mut class_vec: Vec<Class> = Vec::new();
-    for item in class_data.iter(){
-        let start_time = DateTime::parse_from_str(&item.class_time_start, "%Y-%m-%dT%H:%M:%S%:z")
-            .unwrap();
-        let end_time = DateTime::parse_from_str(&item.class_time_end, "%Y-%m-%dT%H:%M:%S%:z")
-            .unwrap();
-        let new_class = Class{
+    let mut specialities_vec: Vec<Speciality> = Vec::new();
+    for item in specialities_data.iter(){
+        let new_speciality = Speciality{
             id: None,
-            class_name: item.name.clone(),
-            start_time: Option::from(start_time.naive_local()),
-            end_time: Option::from(end_time.naive_local()),
-            note: Option::from(item.note.clone()),
-            speciality_id: Option::from(item.speciality_id.clone()),
-            class_id: Option::from(item.id.clone()),
+            name: item.name.clone().unwrap(),
+            enable: item.enable,
+            note: Option::from(item.note.clone().unwrap()),
+            speciality_id: Option::from(item.id),
         };
-        class_vec.push(new_class);
+        specialities_vec.push(new_speciality);
     }
-    diesel::insert_into(classes)
-        .values(&class_vec)
+    diesel::insert_into(specialities)
+        .values(&specialities_vec)
         .execute(&mut conn)
         .expect("Error inserting new classes");
     HttpResponse::Ok()
         .json(ApiResponse{
             code: 0,
             msg: "success".to_string(),
-            data: class_vec,
+            data: specialities_vec,
         })
 }

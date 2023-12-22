@@ -9,3 +9,9 @@ index = "https://rsproxy.cn/crates.io-index"
 [net]
 git-fetch-with-cli = true
 
+#
+#[build]
+#target = "x86_64-unknown-linux-musl"
+#
+#[target.x86_64-unknown-linux-musl]
+#linker = "x86_64-linux-musl-gcc"

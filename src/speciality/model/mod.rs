@@ -1,15 +1,12 @@
-use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::Serialize;
 use crate::schema::*;
 #[derive(Queryable, Identifiable,Insertable, Debug,Serialize)]
-#[diesel(table_name = classes)]
-pub struct Class {
+#[diesel(table_name = specialities)]
+pub struct Speciality {
     pub id: Option<i32>,
-    pub class_name: String,
-    pub start_time: Option<NaiveDateTime>,
-    pub end_time: Option<NaiveDateTime>,
+    pub name: String,
+    pub enable: bool,
     pub note: Option<String>,
     pub speciality_id: Option<i32>,
-    pub class_id: Option<i32>,
 }

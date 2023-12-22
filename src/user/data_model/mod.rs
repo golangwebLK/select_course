@@ -11,6 +11,8 @@
 //     let model: Response = serde_json::from_str(&json).unwrap();
 // }
 
+pub mod course;
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -53,4 +55,6 @@ pub struct StudentDatum {
     pub telephone: Option<String>,
 
     pub updated_at: Option<String>,
+
+    pub class_id: Option<i32>,
 }

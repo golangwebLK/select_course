@@ -1,6 +1,8 @@
 
 extern crate diesel;
 mod user;
+
+mod speciality;
 mod schema;
 mod class;
 mod user_course;
@@ -38,7 +40,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .service(
                 web::scope("/api/v1")
-                    .wrap(auth::Auth)
+                    // .wrap(auth::Auth)
                     .configure(router_config)
             )
             .default_service(web::route().to(HttpResponse::NotFound))
@@ -55,5 +57,9 @@ fn router_config(cfg: &mut web::ServiceConfig) {
     cfg .service(web::scope("/user")
             .configure(user::router_config_user))
         .service(web::scope("/class")
-            .configure(class::router_config_class));
+            .configure(class::router_config_class))
+        .service(web::scope("/speciality")
+            .configure(speciality::router_config_speciality))
+        .service(web::scope("/user_course")
+            .configure(user_course::router_config_user_course));
 }

@@ -1,6 +1,5 @@
 # 使用一个基础镜像
-FROM rust:1.74 as build
-
+FROM rust:1.74
 # 创建一个新的工作目录
 WORKDIR /app
 
@@ -14,7 +13,7 @@ EXPOSE 8080
 
 RUN cp /app/target/release/select_course /usr/local/bin/select_course
 
-RUN rm -rf target
+RUN cargo clean
 
 RUN chmod +x /usr/local/bin/select_course
 

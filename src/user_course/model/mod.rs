@@ -1,9 +1,8 @@
 use diesel::prelude::*;
+use serde::Serialize;
 use crate::schema::*;
-use crate::user::model::User;
-use crate::class::model::Class;
 
-#[derive(Queryable, Identifiable, Debug, Associations)]
+#[derive(Queryable, Identifiable,Insertable, Debug,Serialize)]
 #[diesel(belongs_to(User, foreign_key = user_id))]
 #[diesel(belongs_to(Class, foreign_key = class_id))]
 #[diesel(table_name = users_classes)]
