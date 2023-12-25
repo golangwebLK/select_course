@@ -1,9 +1,11 @@
+pub mod search;
+
+use std::collections::{HashSet};
 use actix_web::{HttpResponse, Responder, web};
-use diesel::{BoolExpressionMethods, ExpressionMethods, QueryDsl, RunQueryDsl};
 use serde::Deserialize;
 use common::util::response::ApiResponse;
-use crate::ConnPool;
-use crate::schema::users_classes;
+use crate::{ ConnPoolSqlx};
+use crate::user::handle::user::ClassSearch;
 use crate::user_course::model::UserClass;
 
 #[derive(Debug, Deserialize)]
@@ -13,52 +15,77 @@ pub struct SelectRequest{
 }
 pub async fn select_course(
     select_request: web::Json<SelectRequest>,
-    pool: web::Data<ConnPool>
+    pool: web::Data<ConnPoolSqlx>
 ) -> impl Responder{
-    let mut conn = pool.get().unwrap();
+    let conn = pool.get_ref();
     let select = select_request.into_inner();
-    let mut query = users_classes::dsl::users_classes.into_boxed();
 
-    if let Some(user_id) = select.user_id {
-        query = query.filter(users_classes::user_id.is_not_null()
-            .and(users_classes::user_id.eq(user_id)));
+    let result = sqlx::query_as::<_,UserClass>(
+        r#"
+        SELECT *
+        FROM users_classes
+        "#,
+    )
+        .fetch_all(conn)
+        .await;
+    let mut user_ids = HashSet::new();
+
+    if let Ok(user_classes) = result {
+        if user_classes.len() > 40 {
+            return HttpResponse::Ok().json(ApiResponse {
+                code: 1,
+                msg: "班级人数已满".to_string(),
+                data: "",
+            });
+        }
+
+        for user_class in user_classes {
+            let user_id = user_class.user_id.unwrap();
+            user_ids.insert(user_id);
+        }
     }
-    let result = query.load::<UserClass>(&mut conn);
 
-    println!("{:?}",result);
-
-    match result {
-        Ok(user_classes) => {
-            if user_classes.len() != 0{
-                return HttpResponse::Ok()
-                    .json(ApiResponse{
-                        code: 0,
-                        msg: "select course success".to_string(),
-                        data: (),
-                    })
-            }
-            let new_user_class = UserClass{
+    match user_ids.get(&select.user_id.unwrap()) {
+        Some(_user_classes) => {
+            return HttpResponse::Ok()
+                .json(ApiResponse{
+                    code: 0,
+                    msg: "select course success".to_string(),
+                    data: (),
+                });
+        }
+        None =>{
+            let new_user_class = UserClass {
                 id: None,
                 user_id: select.user_id,
                 class_id: select.class_id,
             };
-            diesel::insert_into(users_classes::dsl::users_classes)
-                .values(&new_user_class)
-                .execute(&mut conn)
-                .expect("Error inserting new users");
+
+            let _inserted_user_class = sqlx::query(
+                r#"
+                    INSERT INTO users_classes (user_id, class_id)
+                    VALUES (?, ?)
+                    RETURNING id, user_id, class_id
+                    "#,
+            )
+                .bind(&new_user_class.user_id)
+                .bind(&new_user_class.class_id)
+                .execute(conn)
+                .await
+                .expect("Error inserting new user class");
+
+            let cls = sqlx::query_as!(ClassSearch,
+            "SELECT * FROM classes WHERE class_id = ?",
+            new_user_class.class_id
+            )
+                .fetch_one(conn)
+                .await
+                .expect("Error loading data");
             HttpResponse::Ok()
                 .json(ApiResponse{
                     code: 0,
                     msg: "select course success".to_string(),
-                    data: new_user_class,
-                })
-        }
-        Err(e) => {
-            HttpResponse::Ok()
-                .json(ApiResponse{
-                    code: 0,
-                    msg: "select course fail".to_string(),
-                    data: e.to_string(),
+                    data: cls,
                 })
         }
     }

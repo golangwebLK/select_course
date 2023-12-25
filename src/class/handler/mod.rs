@@ -6,13 +6,13 @@ use chrono::{DateTime};
 use diesel::RunQueryDsl;
 use reqwest::header;
 use common::util::response::ApiResponse;
-use crate::ConnPool;
+use crate::ConnPoolDiesel;
 use crate::class::data_model::Root;
 use crate::class::model::Class;
 use crate::schema::classes::dsl::classes;
 
 pub async fn create_class(
-    pool: web::Data<ConnPool>
+    pool: web::Data<ConnPoolDiesel>
 ) -> impl Responder{
     let mut map = HashMap::new();
     map.insert("page",1);

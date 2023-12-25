@@ -1,31 +1,26 @@
 use std::collections::{HashMap, HashSet};
 use std::env;
 use actix_web::{HttpResponse, Responder, web};
-use diesel::{JoinOnDsl, QueryDsl, RunQueryDsl};
 use rand::Rng;
-use diesel::ExpressionMethods;
 use reqwest::header;
 use std::option::Option;
-use serde::Deserialize;
+use diesel::RunQueryDsl;
+use serde::{Deserialize, Serialize};
+use sqlx::Row;
+use sqlx::types::chrono::NaiveDateTime;
 use common::crypto::hash::sha256;
 use common::util::auth::Identity;
 use common::util::response::ApiResponse;
-use crate::class::model::Class;
 use crate::user::data_model::course::Root;
 
-use crate::ConnPool;
-use crate::schema::{classes, specialities, users};
+use crate::{ConnPoolDiesel, ConnPoolSqlx};
+use crate::schema::{users};
 use crate::user::data_model::{Response, StudentDatum};
 use crate::user::model::User;
 
-#[derive(Debug, Deserialize)]
-pub struct LoginRequest{
-    pub username: String,
-    pub password: String,
-}
 
 pub async fn create_user(
-    pool: web::Data<ConnPool>
+    pool: web::Data<ConnPoolDiesel>
 ) -> impl Responder{
     let mut map_student = HashMap::new();
     map_student.insert("page", 1);
@@ -158,58 +153,114 @@ fn find_extra_students<'a>(
     extra_students
 }
 
+#[derive(Debug, Deserialize)]
+pub struct LoginRequest{
+    pub username: String,
+    pub password: String,
+}
+#[derive(Debug, sqlx::FromRow, Serialize)]
+struct UserData {
+    student_id: Option<i32>,
+    name: Option<String>,
+    speciality_id: Option<i32>,
+    speciality_name: String,
+}
 
+#[derive(sqlx::FromRow, Debug,Serialize)]
+pub struct ClassSearch {
+    pub id: Option<i32>,
+    pub class_name: String,
+    pub start_time: Option<NaiveDateTime>,
+    pub end_time: Option<NaiveDateTime>,
+    pub note: Option<String>,
+    pub speciality_id: Option<i32>,
+    pub class_id: Option<i32>,
+}
 
 
 pub async fn login(
     login_request: web::Json<LoginRequest>,
-    pool: web::Data<ConnPool>
+    pool: web::Data<ConnPoolSqlx>
 ) -> impl Responder{
+    let conn = pool.get_ref();
     let login = login_request.into_inner();
-    let mut conn = pool.get().unwrap();
-    return match users::dsl::users
-        .filter(users::username.eq(Option::from(login.username.clone())))
-        .select(users::password).first::<Option<String>>(&mut conn) {
-        Ok(p) => {
-            if p.unwrap()== sha256(login.password) {
-                //判断专业并返回对应班级
-                let rs = users::dsl::users
-                    .inner_join(classes::dsl::classes.on(users::class_id.eq(classes::class_id)))
-                    .inner_join(specialities::dsl::specialities.on(classes::speciality_id.eq(specialities::speciality_id)))
-                    .select((users::student_id,users::name,specialities::speciality_id,specialities::name))
-                    .first::<(Option<i32>,Option<String>, Option<i32>, String)>(&mut conn)
-                    .expect("Error loading data");
-                let speciality_idd = rs.2.unwrap();
-                let cls = classes::dsl::classes
-                    .filter(classes::speciality_id.eq(speciality_idd))
-                    .load::<Class>(&mut conn)
-                    .expect("Error loading data");
-                let json_result = serde_json::to_string(&cls).expect("Error serializing to JSON");
-                let t = Identity::new(0,0,login.username.clone());
-                let mut map_identity = HashMap::new();
-                map_identity.insert("user_id",rs.0.unwrap().to_string());
-                map_identity.insert("user_name",rs.1.unwrap());
-                map_identity.insert("speciality_name",rs.3);
-                map_identity.insert("token", t.to_auth_token().unwrap());
-                map_identity.insert("classes",json_result);
-                return HttpResponse::Ok().json(ApiResponse{
-                    code: 0,
-                    msg: "login success".to_string(),
-                    data: map_identity,
-                });
-            }
-            HttpResponse::Ok().json(ApiResponse{
+    let row = sqlx::query(
+        "SELECT password FROM users WHERE username = ?",
+    )
+        .bind(&login.username)
+        .fetch_one(conn)
+        .await;
+
+    if let Ok(r) = row{
+        if r.get::<String,_>(0) != sha256(login.password){
+            return HttpResponse::Ok().json(ApiResponse {
                 code: 1,
                 msg: "login fail".to_string(),
                 data: (),
-            })
+            });
         }
-        Err(_) => {
-            HttpResponse::Ok().json(ApiResponse{
-                code: 1,
-                msg: "login fail".to_string(),
-                data: (),
-            })
+    }
+
+    let rs = sqlx::query_as::<_, UserData>(
+        r#"
+            SELECT users.student_id, users.name, specialities.speciality_id, specialities.name as speciality_name
+            FROM users
+            LEFT JOIN classes ON users.class_id = classes.class_id
+            LEFT JOIN specialities ON classes.speciality_id = specialities.speciality_id
+            WHERE users.username = ?
+            "#,
+    )
+        .bind(&login.username)
+        .fetch_one(conn)
+        .await
+        .expect("Error loading data");
+
+    let result = sqlx::query_as::<_, crate::user_course::model::UserClass>(
+        r#"
+        SELECT *
+        FROM users_classes
+        WHERE user_id = ?
+        "#,
+    )
+        .bind(&rs.student_id.unwrap())
+        .fetch_all(conn)
+        .await;
+    let mut map_identity = HashMap::new();
+    if let Ok(r) = result{
+        if r.len() != 0{
+            let user_class = r.get(0).unwrap();
+            let cls = sqlx::query_as!(ClassSearch,
+            "SELECT * FROM classes WHERE class_id = ?",
+            user_class.class_id
+            )
+                .fetch_one(conn)
+                .await
+                .expect("Error loading data");
+            let json_result = serde_json::to_string(&cls).expect("Error serializing to JSON");
+            map_identity.insert("classed", json_result);
+            map_identity.insert("status", "true".parse().unwrap());
+        }else {
+            let cls = sqlx::query_as!(ClassSearch,
+            "SELECT * FROM classes WHERE speciality_id = ?",
+            rs.speciality_id.unwrap()
+            )
+                .fetch_all(conn)
+                .await
+                .expect("Error loading data");
+            let json_result = serde_json::to_string(&cls).expect("Error serializing to JSON");
+            map_identity.insert("classes", json_result);
+            map_identity.insert("status", "false".parse().unwrap());
         }
-    };
+    }
+
+    let t = Identity::new(0, 0, login.username.clone());
+    map_identity.insert("user_id", rs.student_id.unwrap().to_string());
+    map_identity.insert("user_name", rs.name.unwrap());
+    map_identity.insert("speciality_name", rs.speciality_name);
+    map_identity.insert("token", t.to_auth_token().unwrap());
+    HttpResponse::Ok().json(ApiResponse {
+        code: 0,
+        msg: "login success".to_string(),
+        data: map_identity,
+    })
 }

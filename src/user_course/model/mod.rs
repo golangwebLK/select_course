@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use serde::Serialize;
 use crate::schema::*;
-
+#[derive(sqlx::FromRow)]
 #[derive(Queryable, Identifiable,Insertable, Debug,Serialize)]
 #[diesel(belongs_to(User, foreign_key = user_id))]
 #[diesel(belongs_to(Class, foreign_key = class_id))]

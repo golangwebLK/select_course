@@ -5,13 +5,13 @@ use actix_web::{HttpResponse, Responder, web};
 use diesel::RunQueryDsl;
 use reqwest::header;
 use common::util::response::ApiResponse;
-use crate::ConnPool;
+use crate::ConnPoolDiesel;
 use crate::schema::specialities::dsl::specialities;
 use crate::speciality::data_model::Root;
 use crate::speciality::model::Speciality;
 
 pub async fn create_speciality(
-    pool: web::Data<ConnPool>
+    pool: web::Data<ConnPoolDiesel>
 ) -> impl Responder{
     let mut map = HashMap::new();
     map.insert("page",1);

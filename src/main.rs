@@ -11,10 +11,12 @@ use actix_web::{App, HttpResponse, HttpServer, middleware, web};
 use diesel::r2d2::{ConnectionManager};
 use diesel::{MysqlConnection, r2d2};
 use dotenv::dotenv;
+use sqlx::{MySql, Pool};
+use sqlx::mysql::MySqlPoolOptions;
 use common::middleware::auth;
 
-pub type ConnPool = r2d2::Pool<ConnectionManager<MysqlConnection>>;
-
+pub type ConnPoolDiesel = r2d2::Pool<ConnectionManager<MysqlConnection>>;
+pub type ConnPoolSqlx = Pool<MySql>;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -25,9 +27,13 @@ async fn main() -> std::io::Result<()> {
     let database_url: String = std::env::var("DATABASE_URL").unwrap();
     let server_ip: String = std::env::var("SERVER_IP").unwrap();
 
-    let pool: r2d2::Pool<ConnectionManager<MysqlConnection>> = ConnPool::builder()
+    let pool_diesel: r2d2::Pool<ConnectionManager<MysqlConnection>> = ConnPoolDiesel::builder()
         .max_size(5)
-        .build(ConnectionManager::<MysqlConnection>::new(database_url)).unwrap();
+        .build(ConnectionManager::<MysqlConnection>::new(&database_url)).unwrap();
+
+    let pool_sqlx = MySqlPoolOptions::new()
+        .max_connections(20)
+        .connect(&database_url).await.unwrap();
 
     HttpServer::new(move|| {
         App::new()
@@ -37,10 +43,11 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/api/v1/login")
                 .route(web::post().to(user::handle::user::login))
             )
-            .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(pool_diesel.clone()))
+            .app_data(web::Data::new(pool_sqlx.clone()))
             .service(
                 web::scope("/api/v1")
-                    // .wrap(auth::Auth)
+                    .wrap(auth::Auth)
                     .configure(router_config)
             )
             .default_service(web::route().to(HttpResponse::NotFound))
